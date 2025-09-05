@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ARtest · 송편을 든 토끼</title>
+  <meta name="description" content="froggegul ARtest: 송편을 든 토끼 glb를 웹/AR로 미리보기" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🐇%3C/text%3E%3C/svg%3E">
+  <!-- model-viewer -->
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans KR', sans-serif; background: #fff; }
+    header { position: fixed; inset: 0 0 auto 0; display: flex; gap: .5rem; align-items: center; padding: .6rem .8rem; background: rgba(255,255,255,.75); backdrop-filter: blur(6px); z-index: 5; border-bottom: 1px solid rgba(0,0,0,.06); }
+    header .title { font-weight: 700; }
+    header .spacer { flex: 1 }
+    header button, header a { font-size: .95rem; padding: .45rem .7rem; border-radius: .6rem; border: 1px solid #ddd; background: #fff; cursor: pointer; text-decoration: none; color: inherit; }
+    model-viewer { width: 100vw; height: 100vh; }
+    .qr-panel { position: fixed; right: .8rem; bottom: .8rem; background: rgba(255,255,255,.88); border: 1px solid #e6e6e6; border-radius: .8rem; padding: .6rem; display: grid; grid-template-columns: 120px auto; gap: .6rem; align-items: center; box-shadow: 0 8px 30px rgba(0,0,0,.12); }
+    .qr-panel img { width: 120px; height: 120px; }
+    .qr-panel small { display:block; opacity:.75 }
+    .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 1rem; background: #111; color:#fff; padding: .5rem .8rem; border-radius: .6rem; opacity: 0; transition: opacity .25s; }
+    .toast.show { opacity: .9; }
+    .footer { position: fixed; left: .8rem; bottom: .8rem; font-size: .85rem; opacity: .6; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">ARtest · 송편을 든 토끼</div>
+    <div class="spacer"></div>
+    <button id="copy">링크 복사</button>
+    <a id="share" href="#" role="button">공유</a>
+    <a id="open-ar" href="#" rel="ar" role="button">AR 열기</a>
+  </header>
+
+  <model-viewer id="mv"
+    src="assets/rabbit.glb"
+    alt="송편을 든 토끼 3D 모델"
+    ar ar-modes="webxr scene-viewer quick-look"
+    camera-controls
+    touch-action="pan-y"
+    shadow-intensity="1"
+    environment-image="neutral"
+    tone-mapping="aces"
+    exposure="1.0"
+    loading="eager">
+    <button slot="ar-button" style="position:absolute; left:50%; transform:translateX(-50%); bottom:16px; background:white; border:1px solid #ccc; border-radius:10px; padding:.6rem 1rem; font-size:1rem; box-shadow:0 4px 20px rgba(0,0,0,.15);">
+      AR로 보기
+    </button>
+  </model-viewer>
+
+  <div class="qr-panel">
+    <img id="qr" alt="이 페이지 QR" />
+    <div>
+      <div><strong>이 페이지 QR</strong></div>
+      <small>GitHub Pages 배포 주소가 반영됩니다. PNG 저장 가능.</small>
+      <div style="margin-top:.4rem; display:flex; gap:.5rem;">
+        <button id="save-qr">QR 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">복사되었습니다</div>
+  <div class="footer">© froggegul · model-viewer 기반</div>
+
+  <script>
+    const mv = document.getElementById('mv');
+    // 동적 QR: 현재 페이지 URL로 생성
+    const refreshQR = () => {
+      const u = location.href;
+      const api = 'https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=' + encodeURIComponent(u);
+      const img = document.getElementById('qr');
+      img.src = api;
+      img.dataset.dl = api;
+    };
+    refreshQR();
+
+    // AR 버튼용 앵커 href 동기화
+    const openAR = document.getElementById('open-ar');
+    const syncAR = () => { openAR.href = mv.src; };
+    mv.addEventListener('load', syncAR); syncAR();
+
+    // 링크 복사/공유
+    const toast = document.getElementById('toast');
+    const showToast = (msg) => { toast.textContent = msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 1200); }
+    document.getElementById('copy').onclick = async () => {
+      try { await navigator.clipboard.writeText(location.href); showToast('링크를 클립보드에 복사했어요'); }
+      catch { showToast('복사 실패'); }
+    };
+    document.getElementById('share').onclick = async (e) => {
+      e.preventDefault();
+      if (navigator.share) { try { await navigator.share({ title: document.title, url: location.href }); } catch(_){} }
+      else { showToast('이 브라우저는 Web Share를 지원하지 않아요'); }
+    };
+    document.getElementById('save-qr').onclick = () => {
+      const a = document.createElement('a');
+      a.href = document.getElementById('qr').dataset.dl;
+      a.download = 'ARtest_qr.png';
+      document.body.appendChild(a); a.click(); a.remove();
+    };
+  </script>
+</body>
+</html>
